@@ -1,0 +1,82 @@
+    /**
+     * Using for check the form are all put the data.
+     * Can try this
+     * if(Utils.formRequireCheck(formXXX)
+     *     form.submit();
+     *
+     * @param array {selector, type, errorMsg, defaultValue}
+     * selector: use css selector to get the element
+     * type (optional) (if it's "number" than use isNumber to check it)
+     *      "number": check that the variable is a number or not.
+     *      "default": will set the default value to that  (need to put with a defaultValue);
+     *      ""
+     * P.S. will show add class "alert" or errorInputClass to each input column... so you can use the css to that
+     * @param params (optional)  is using to set up something that we really need to do
+     *     we can 1: put the error function here
+     *     params.errorFn(errors)  can put the error msg here so that 
+     *     params.errorInputClass  can put the class inside the 
+     * Trying to remove the return value to function call so that we can use it. 
+     */
+    Utils.formRequireCheck = function(array, params){
+        if(typeof $j !=='undefined'){
+            $ = $j;
+        }
+        var errors="";
+        var firstErrorElem;
+        var allTrue= true;
+        var errorInputCssClass= "alert";
+        if(params && typeof params.errorInputClass ==="string" ){
+            errorInputCssClass = params.errorInputClass;
+        }
+
+        var elem, selector, type, name;
+        for(var key in array) {
+            
+            elem = array[key];
+            selector = elem.selector;
+            type = elem.type;
+            name = elem.name;
+                if(!name){
+                    name = selector;
+                }
+            $(selector).removeClass(errorInputCssClass);
+            var value = $(selector).val();
+            if(!value){
+                errors=errors+(name +" is empty.\n");
+                allTrue=false;
+                $(selector).addClass(errorInputCssClass);
+                if(!firstErrorElem){
+                    firstErrorElem = selector;
+                }
+            }else{
+                if(type ==="number"){
+                    if(!Utils.isNumber(value) ){
+                        errors=errors+(name +" is not number.\n");
+                        allTrue=false;
+                        if(!firstErrorElem){
+                            firstErrorElem = selector;
+                        }
+
+                        $(selector).addClass(errorInputCssClass);
+                    }
+                }
+
+            }
+
+        }
+        //finish the loop check again
+        if(allTrue){
+            return true;
+        }else{
+            //did 
+            if(params && typeof params.errorFn !="undefined" ){
+                params.errorFn(errors);
+                return false;
+            }else{
+                alert(errors);
+                $(document).scrollTop($(firstErrorElem).position().top);
+                return false;
+            }
+            
+        }
+    };
