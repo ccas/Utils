@@ -4,26 +4,41 @@
      * if(Utils.formRequireCheck(formXXX)
      *     form.submit();
      *
-     * @param array {selector, type, errorMsg, defaultValue}
+     * @param array {selector, type, errorMsg,  defaultValue, customFn}
      * selector: use css selector to get the element
      * type (optional) (if it's "number" than use isNumber to check it)
      *      "number": check that the variable is a number or not.
-     * defaultValue: will put the defaultValue if there's null data or invalid value.
+     *      "customFn"(optional): customized function to check type 
+     * errorMsg(optional): will saves the error msg if the format is not valid
+     * defaultValue(optional): will put the defaultValue if there's null data or invalid value.
      * P.S. will show add class "alert" or errorInputClass to each input column... so you can use the css to that
      * @param params (optional)  is using to set up something that we really need to do
      *     we can 1: put the error function here
      *     params.errorFn(errors)  can put the error msg here so that 
      *     params.errorInputClass  can put the class inside the 
-     * Trying to remove the return value to function call so that we can use it. 
+     * Trying to remove the return value to function call so that we can use it.
+     * 
+     *  typeFunction Example:
+     *  typeFunction = function(value){
+     *     if(value.equals...)
+     *         return true;
+     *     return false;
+     *  }
+     *  
      */
     Utils.formRequireCheck = function(array, params){
         if(typeof $j !=='undefined'){
             $ = $j;
         }
+        var currentElem;
+        var value;
         var errors="";
+        var customFn;
         var firstErrorElem;
         var allTrue= true;
         var defaultValue;
+        var  errorMsg;
+        var multipleColumn=false;
         var errorInputCssClass= "alert";
         if(params && typeof params.errorInputClass ==="string" ){
             errorInputCssClass = params.errorInputClass;
@@ -31,29 +46,22 @@
 
         var elem, selector, type, name;
         for(var key in array) {
-            
             elem = array[key];
             selector = elem.selector;
             type = elem.type;
             name = elem.name;
+            errorMsg= elem.errorMsg;
+            multipleColumn = elem.multipleColumn;
+            customFn=elem.customFn;
             defaultValue = elem.defaultValue;
-                if(!name){
-                    name = selector;
-                }
-            $(selector).removeClass(errorInputCssClass);
-            var value = $(selector).val();
-            if(!value){
-                handleEmtpyValue(name +" is empty.\n");
-            }else{
-                if(type ==="number"){
-                    if(!Utils.isNumber(value) ){
-                        handleEmtpyValue(name +" is not number.\n");
-
-                    }
-                }
-
+            if(!name){
+                name = selector;
             }
 
+            $( selector ).each(function( index ) {
+                currentElem = $(this);
+                checkField(currentElem);
+            });
         }
         //finish the loop check again
         if(allTrue){
@@ -70,19 +78,43 @@
             }
             
         }
+        //inner function
+        //Check the currentElem is match for the type or not
+        function checkField(currentElem){
+            value = currentElem.val();
+            currentElem.removeClass(errorInputCssClass);
+            if(!value){
+                handleEmtpyValue(name +" is empty.\n");
+            }else{
+                if(type ==="number"){
+                    if(!Utils.isNumber(value) ){
+                        handleEmtpyValue(name +" is not a number.\n");
+                    }
+                }else if(type ==="customFn"){
+                    if(!customFn(value))
+                        handleEmtpyValue(name +" is not match the type.\n");
+                }
 
-        /*inner function*/
-        function handleEmtpyValue(errorMsg){
-            errors=errors+(errorMsg);
-            allTrue=false;
-            if(!firstErrorElem){
-                firstErrorElem = selector;
             }
-            if(defaultValue){
-                $(selector).val(defaultValue);
+
+        }
+        /*inner function*/
+        function handleEmtpyValue(defaultMsg){
+            if(defaultValue && !currentElem.val()){
+                currentElem.val(defaultValue);
             }
             else{
-                $(selector).addClass(errorInputCssClass);
+                currentElem.addClass(errorInputCssClass);
+
+                if(!errorMsg){
+                    errorMsg= defaultMsg;
+                }
+                errors=errors+(errorMsg);
+                allTrue=false;
+                if(!firstErrorElem){
+                    firstErrorElem = selector;
+                }
+
             }
         }
         
